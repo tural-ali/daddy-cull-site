@@ -1,4 +1,4 @@
-# dc.turalali.com
+# daddy-cull.turalali.com
 
 The landing page for [Daddy, Cull!](https://github.com/tural-ali/daddy-cull), served by GitHub Pages from `main`.
 
