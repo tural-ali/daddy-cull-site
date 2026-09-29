@@ -9,6 +9,19 @@
   var now = new Date();
   var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var todayLabel = now.getDate() + ' ' + monthNames[now.getMonth()];
+  var year = now.getFullYear();
+
+  // Every date a scene shows is counted from the reader's today, so the page
+  // always looks like the app would on the day it is read.
+  function ago(days) { return new Date(year, now.getMonth(), now.getDate() - days); }
+  function sameDay(y) {
+    var d = new Date(y, now.getMonth(), now.getDate());
+    return d.getMonth() === now.getMonth() ? d : new Date(y, now.getMonth() + 1, 0);
+  }
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function iso(d) { return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()); }
+  function shortDate(d) { return d.getDate() + ' ' + monthNames[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear(); }
+  function longDate(d) { return d.getDate() + ' ' + monthNames[d.getMonth()] + ' ' + d.getFullYear(); }
 
   /* ---------- Little helpers ---------- */
 
@@ -294,9 +307,9 @@
     var main = $(frame, '.app-main');
     main.innerHTML =
       '<div class="day-h"><h4>' + todayLabel + '</h4><p><b>9</b> memories · <b>3</b> years · 41.2 MB</p></div>' +
-      '<div class="yr"><h5>2016 <span>3 memories</span></h5><div class="row" data-row="0"></div></div>' +
-      '<div class="yr"><h5>2019 <span>2 memories</span></h5><div class="row" data-row="1"></div></div>' +
-      '<div class="yr"><h5>2023 <span>4 memories</span></h5><div class="row" data-row="2"></div></div>' +
+      '<div class="yr"><h5>' + (year - 10) + ' <span>3 memories</span></h5><div class="row" data-row="0"></div></div>' +
+      '<div class="yr"><h5>' + (year - 7) + ' <span>2 memories</span></h5><div class="row" data-row="1"></div></div>' +
+      '<div class="yr"><h5>' + (year - 3) + ' <span>4 memories</span></h5><div class="row" data-row="2"></div></div>' +
       '<div class="keyhint" data-hint></div>' +
       '<div class="done-card" data-card><div class="done-in">' + icon('task_alt') + '<b>' + todayLabel + ' reviewed</b><span>7 kept · 2 in the Bin · 1 favourite</span></div></div>';
     var layout = [[[3, 1.5], [8, 0.75], [5, 1.5]], [[2, 1.5], [14, 1.33, '0:14']], [[9, 1], [12, 1.5], [7, 1.5], [13, 0.75]]];
@@ -416,11 +429,12 @@
 
   /* How it works, 2: a photo filed under the day it was taken. */
   scenes.filing = function (root, wait) {
+    var takenOn = ago(1), day = iso(takenOn);
     var lines = [
-      [0, 'folder', 'Library/'], [1, 'folder', '2025/'], [2, 'folder', '2025-09/'], [3, 'folder', '2025-09-29/'],
+      [0, 'folder', 'Library/'], [1, 'folder', day.slice(0, 4) + '/'], [2, 'folder', day.slice(0, 7) + '/'], [3, 'folder', day + '/'],
       [4, 'image', 'IMG_5531.HEIC'], [4, 'videocam', 'IMG_5531.MOV']
     ];
-    root.innerHTML = '<div class="file-in"><span class="fchip still" data-chip><i style="background-image:' + photo(4).replace(/"/g, "'") + '"></i>IMG_5531.HEIC</span><span class="taken" data-taken>Taken 29 September 2025</span></div>' +
+    root.innerHTML = '<div class="file-in"><span class="fchip still" data-chip><i style="background-image:' + photo(4).replace(/"/g, "'") + '"></i>IMG_5531.HEIC</span><span class="taken" data-taken>Taken ' + longDate(takenOn) + '</span></div>' +
       '<div class="ftree">' + lines.map(function (l) {
         return '<span class="fl" style="--d:' + l[0] + '">' + icon(l[1]) + l[2] + '</span>';
       }).join('') + '<span class="fl dupe" style="--d:0">' + icon('layers') + 'Already in the library: IMG_0412.JPG</span></div>';
@@ -468,7 +482,7 @@
   /* Duplicates: three identical copies, one kept. */
   scenes.duplicates = function (root, wait) {
     root.innerHTML = '<div class="mini-panel"><p class="mini-meta">3 identical copies · 241.9 KB each · <b data-free>483.8 KB</b> <span data-free-l>reclaimable</span></p><div class="dup-row"></div><span class="pill-btn" data-go>Keep the selected copy, mark the other 2 for the Bin</span></div><span class="mini-bin" data-bin>' + icon('delete') + '</span>';
-    var row = $(root, '.dup-row'), labels = ['2019-09-29', '2019-09-29', '2019-12-26'], tiles = [];
+    var row = $(root, '.dup-row'), labels = [iso(sameDay(year - 7)), iso(sameDay(year - 7)), iso(new Date(year - 7, now.getMonth(), now.getDate() + 88))], tiles = [];
     labels.forEach(function (label) {
       var t = tile(0, '', '<span class="badge" data-b>choose as keeper</span><span class="ph-date">' + label + '</span>');
       row.appendChild(t); tiles.push(t);
@@ -499,7 +513,7 @@
   /* Viewer: a RAW and its JPEG, the Info panel, turning. */
   scenes.viewer = function (root, wait) {
     root.innerHTML = '<div class="viewer"><div class="v-stage"><span class="v-badge" data-fmt>RAW</span></div><div class="v-info"><b>Info</b><dl>' +
-      '<dt>Taken</dt><dd>29 Sep 2019, 17:42</dd><dt>Size</dt><dd data-size>6000 × 4000 · 24.3 MB</dd><dt>File</dt><dd data-file>DSC_1180.NEF</dd><dt>SHA-256</dt><dd class="mono">9f2c…a41e</dd></dl></div></div>' +
+      '<dt>Taken</dt><dd>' + shortDate(sameDay(year - 7)) + ', 17:42</dd><dt>Size</dt><dd data-size>6000 × 4000 · 24.3 MB</dd><dt>File</dt><dd data-file>DSC_1180.NEF</dd><dt>SHA-256</dt><dd class="mono">9f2c…a41e</dd></dl></div></div>' +
       '<div class="v-keys"><kbd data-k="i">I</kbd><kbd data-k="r">]</kbd><kbd data-k="n">→</kbd></div>';
     var stage = $(root, '.v-stage'), info = $(root, '.v-info'), fmtBadge = $(root, '[data-fmt]');
     var size = $(root, '[data-size]'), file = $(root, '[data-file]');
@@ -586,9 +600,9 @@
   scenes.arrivals = function (root, wait) {
     root.innerHTML = '<div class="bellrow"><span class="bell" data-bell>' + icon('notifications') + '<b data-bn hidden>0</b></span></div><div class="mini-panel notes"></div><div class="strip"></div>';
     var notes = $(root, '.notes'), bell = $(root, '[data-bell]'), bn = $(root, '[data-bn]'), strip = $(root, '.strip');
-    for (var d = 24; d <= 30; d++) strip.appendChild(el('span', 'scell done', '<i>' + d + '</i>'));
+    for (var d = 6; d >= 0; d--) strip.appendChild(el('span', 'scell done', '<i>' + ago(d).getDate() + '</i>'));
     var cells = $$(strip, '.scell');
-    var items = [['12 files reached', '29 Sep 2025'], ['3 files reached', '26 Sep 2025'], ['1 deletion on the phone marked for the Bin', '']];
+    var items = [['12 files reached', shortDate(ago(1))], ['3 files reached', shortDate(ago(4))], ['1 deletion on the phone marked for the Bin', '']];
     return {
       still: function () { cells[5].classList.add('dot'); bn.hidden = false; bn.textContent = '2'; },
       loop: async function () {
@@ -611,7 +625,7 @@
   /* The review streak. */
   scenes.streak = function (root, wait) {
     root.innerHTML = '<div class="streak"><span class="flame">' + icon('local_fire_department-fill') + '<b data-s>0</b></span><span class="streak-l">days in a row</span></div><div class="week"></div>';
-    var week = $(root, '.week'), s = $(root, '[data-s]'), labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var week = $(root, '.week'), s = $(root, '[data-s]'), labels = [6, 5, 4, 3, 2, 1, 0].map(function (d) { return 'SMTWTFS'.charAt(ago(d).getDay()); });
     labels.forEach(function (l) { week.appendChild(el('span', 'wd', '<i>' + l + '</i>' + icon('check'))); });
     var days = $$(week, '.wd');
     return {
@@ -845,7 +859,7 @@
 
   /* Addons: one dropped in, asked about, turned on, its page in the sidebar. */
   scenes.addons = function (root, wait) {
-    var frame = appFrame({page: 'addons', placeholder: 'Go to a date, like 14 Aug 2019'});
+    var frame = appFrame({page: 'addons', placeholder: 'Go to a date, like ' + shortDate(sameDay(year - 7))});
     root.appendChild(frame);
     var main = $(frame, '.app-main');
     var rows = [
