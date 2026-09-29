@@ -286,18 +286,32 @@
       count.textContent = done;
       bar.style.width = (done / filed * 100).toFixed(2) + '%';
     }
-    if (reduce || !before.length) { show(before.length); return; }
-    var duration = 3000, begin = null, shown = 0;
-    function frame(time) {
-      if (begin === null) begin = time;
-      var progress = Math.min(1, (time - begin) / duration);
-      var target = Math.round((1 - Math.pow(1 - progress, 2)) * before.length);
+    if (reduce || !before.length || !('IntersectionObserver' in window)) { show(before.length); return; }
+    // The year fills in while the calendar is on screen, and again each time
+    // it comes back, so a reader who looks at it after the headline still
+    // sees it happen. Off screen or in a hidden tab its clock stands still.
+    var FILL = 5200, HOLD = 3400, REST = 700, cycle = FILL + HOLD + REST;
+    var clock = 0, last = null, visible = false, shown = 0, ticking = false;
+    function paint(target) {
       for (; shown < target; shown++) before[shown].classList.add('done');
+      for (; shown > target; shown--) before[shown - 1].classList.remove('done');
       count.textContent = shown;
       bar.style.width = (shown / filed * 100).toFixed(2) + '%';
-      if (progress < 1) requestAnimationFrame(frame);
     }
-    setTimeout(function () { requestAnimationFrame(frame); }, 500);
+    function frame(time) {
+      if (!visible) { ticking = false; last = null; return; }
+      if (last !== null && !document.hidden) clock = (clock + time - last) % cycle;
+      last = time;
+      var progress = Math.min(1, clock / FILL);
+      paint(clock < FILL + HOLD ? Math.round((1 - Math.pow(1 - progress, 2)) * before.length) : 0);
+      requestAnimationFrame(frame);
+    }
+    new IntersectionObserver(function (entries) {
+      var now = entries[entries.length - 1].isIntersecting;
+      if (now && !visible) { clock = 0; paint(0); }
+      visible = now;
+      if (visible && !ticking) { ticking = true; requestAnimationFrame(frame); }
+    }, {threshold: 0.4}).observe(grid);
   })();
 
   /* Today: a day being cleaned up, one key at a time. */

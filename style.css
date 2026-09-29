@@ -547,6 +547,9 @@ h1 .two { display: block; color: var(--accent); }
 .task > div { flex: 1; min-width: 0; }
 .task b { display: block; }
 .task span:not(.ring):not(.pill-btn) { font-size: .9em; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* A task's button sits at the end of its row, not across the panel as a
+   panel's own button does. */
+.task .pill-btn { flex: none; width: auto; margin-top: 0; }
 .ring {
   --p: 0; flex: none; width: 2.3em; height: 2.3em; border-radius: 50%;
   background: conic-gradient(var(--accent) calc(var(--p) * 1turn), var(--line) 0);
