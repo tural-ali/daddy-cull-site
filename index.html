@@ -268,10 +268,49 @@
     <div>
       <h2 id="install-title">Install the beta</h2>
       <div class="tabs" role="tablist" aria-label="Where to install">
-        <button type="button" role="tab" id="tab-mac" aria-controls="pane-mac" aria-selected="true">On a Mac</button>
+        <button type="button" role="tab" id="tab-agent" aria-controls="pane-agent" aria-selected="true">Agent prompt</button>
+        <button type="button" role="tab" id="tab-mac" aria-controls="pane-mac" aria-selected="false" tabindex="-1">On a Mac</button>
         <button type="button" role="tab" id="tab-server" aria-controls="pane-server" aria-selected="false" tabindex="-1">On a server</button>
       </div>
-      <div class="pane" role="tabpanel" id="pane-mac" aria-labelledby="tab-mac">
+      <div class="pane" role="tabpanel" id="pane-agent" aria-labelledby="tab-agent">
+        <p>Let a coding agent do it. Paste this prompt into Claude Code, Codex, Cursor or any agent that can run commands on your Mac. It reads the installer, asks where your photos should go, installs, and checks that everything runs.</p>
+        <div class="prompt" data-copy>
+          <pre tabindex="0" aria-label="The install prompt"><code>Install Daddy, Cull! on this Mac for me, end to end, and leave it running.
+
+Daddy, Cull! is a free, open-source photo and video organiser that runs locally: https://daddy-cull.turalali.com
+Code, installer and README: https://github.com/tural-ali/daddy-cull
+
+Work in Terminal on this Mac as my own user. Never use sudo. Before each step, tell me in one line what you are about to do.
+
+1. Read the installer first: https://raw.githubusercontent.com/tural-ali/daddy-cull/main/install.sh
+   Tell me in a few lines what it installs and changes. It checks this Mac itself (macOS 14 or newer, 4 GB memory, 2 GB free space, port 8830 free) and changes nothing if a check fails.
+
+2. Ask me, in one message:
+   - Where my photo library should live. The default is ~/Pictures/Daddy Cull/Library. Downloads, Desktop and Documents don't work, because macOS guards them. An external drive is fine.
+   - Whether to download my iCloud Photos (installs icloudpd). Optional.
+   - Whether to copy photos from the Photos app on this Mac (installs osxphotos). Optional.
+
+3. Check for Homebrew: test -x /opt/homebrew/bin/brew || test -x /usr/local/bin/brew
+   If it is missing, installing it needs my Mac password, which you can't type. Give me the full command from step 4 to paste into Terminal myself, wait until I say it has finished, then go on to step 5.
+
+4. Run the installer with my answers, for example:
+   curl -fsSL https://raw.githubusercontent.com/tural-ali/daddy-cull/main/install.sh | bash -s -- --yes --library "$HOME/Pictures/Daddy Cull/Library" --with-icloud --without-apple-photos
+   If port 8830 is taken, put DADDY_CULL_PORT=8860 in front of bash and use that port from here on.
+
+5. Check it works: run daddy-cull status, and check that http://127.0.0.1:8830 answers. If daddy-cull is not found, use /opt/homebrew/bin/daddy-cull or /usr/local/bin/daddy-cull. If anything failed, read the logs in ~/Library/Application Support/Daddy Cull/logs and the Troubleshooting section of the README, fix what you can, and tell me what you changed.
+
+6. Hand over what only I can do, and wait for me:
+   - If the library is on an external drive: I add ~/Library/Application Support/Daddy Cull/app/current/bin/cull to Full Disk Access in System Settings, Privacy &amp; Security. Then you run daddy-cull restart.
+   - If I chose iCloud: I run daddy-cull icloud sign-in in my own Terminal. It asks for my Apple ID password and a two-factor code.
+
+7. Finish with daddy-cull open setup, and tell me where my library and Import folders are and how new photos get in.
+
+Rules: never type my passwords, Apple ID or two-factor codes, and never ask me to paste them into this chat. Never move, rename or delete my existing photos. Don't change system settings yourself.</code></pre>
+          <button type="button" class="copy" aria-label="Copy the install prompt">Copy</button>
+        </div>
+        <p class="prompt-note">The agent stops for the two things only you can do: your Mac password, if Homebrew needs installing, and your Apple ID sign-in, if you turn on iCloud.</p>
+      </div>
+      <div class="pane" role="tabpanel" id="pane-mac" aria-labelledby="tab-mac" hidden>
         <p>The current release is a beta. The installer checks your Mac, installs what it needs, and opens setup in your browser. Paste this into Terminal:</p>
         <div class="cmd" data-copy>
           <code>curl -fsSL https://raw.githubusercontent.com/tural-ali/daddy-cull/main/install.sh | bash</code>

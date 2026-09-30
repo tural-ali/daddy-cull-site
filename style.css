@@ -826,9 +826,24 @@ h1 .two { display: block; color: var(--accent); }
 .install p { color: var(--muted); margin: 0 0 20px; }
 .install .cmd { margin-bottom: 20px; }
 .tabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 22px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
-.tabs [role="tab"] { font: 600 14.5px var(--font); color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer; transition: color .3s, background-color .3s; }
+.tabs [role="tab"] { font: 600 14.5px var(--font); color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 8px 18px; white-space: nowrap; cursor: pointer; transition: color .3s, background-color .3s; }
 .tabs [role="tab"][aria-selected="true"] { color: var(--accent-ink); background: var(--accent); }
 .pane[hidden] { display: none; }
+.prompt { position: relative; margin-bottom: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.prompt pre {
+  margin: 0; max-height: 340px; overflow: auto; padding: 16px 18px; padding-right: 104px;
+  font: 14px/1.6 var(--font); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere;
+  border-radius: 14px;
+}
+/* A fade at the foot says the prompt goes on below. */
+.prompt::after {
+  content: ""; position: absolute; left: 1px; right: 14px; bottom: 1px; height: 44px; pointer-events: none;
+  border-radius: 0 0 14px 14px; background: linear-gradient(transparent, var(--panel));
+}
+.prompt code { font: inherit; }
+.prompt pre:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.prompt .copy { position: absolute; top: 8px; right: 8px; }
+.install .prompt-note { font-size: 14px; }
 .scene-install { background: var(--panel); }
 .inst { list-style: none; margin: 0; padding: 18px 22px; display: grid; gap: 10px; font-size: 15px; }
 .inst li { display: flex; align-items: center; gap: 12px; color: var(--muted); transition: color .3s; }
@@ -922,6 +937,9 @@ h1 .two { display: block; color: var(--accent); }
   .scene-friends > .sci { font-size: 3.2cqw; }
   .timeline > li { grid-template-columns: 64px minmax(0, 1fr); gap: 14px; }
   .inst { padding: 16px; font-size: 14px; }
+  .tabs { display: flex; }
+  .tabs [role="tab"] { flex: 1 1 auto; padding: 8px 10px; font-size: 14px; }
+  .prompt pre { max-height: 300px; padding: 56px 16px 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
