@@ -1,6 +1,5 @@
 // Daddy, Cull! landing page. Every picture on the page is drawn here, in the
-// app's own look, and plays while it is on screen: the hero's Year calendar
-// once, every other scene in a loop. With less motion asked for, each shows
+// app's own look, and plays in a loop while it is on screen. With less motion asked for, each shows
 // one still moment instead. The photos are made up, drawn as the app's own
 // synthetic library draws them, and every name and number is an example.
 (function () {
@@ -249,7 +248,7 @@
     }
   }
 
-  /* The hero: the Year calendar, filling in once up to today. */
+  /* The Year calendar under the Today demo, filling in up to today. */
   (function () {
     var grid = $(document, '[data-grid]');
     if (!grid) return;
@@ -281,6 +280,8 @@
     var count = $(document, '[data-reviewed]'), bar = $(document, '[data-bar]');
     $(document, '[data-dates]').textContent = filed;
     $(document, '[data-today-label]').textContent = 'Today, ' + todayLabel;
+    var example = $(document, '[data-example]');
+    if (example) example.textContent = 'On ' + todayLabel + ', review your photos and videos from ' + todayLabel + ' in ' + (year - 10) + ', ' + (year - 7) + ', ' + (year - 3) + ' and every other year in your library.';
     function show(done) {
       for (var i = 0; i < done; i++) before[i].classList.add('done');
       count.textContent = done;
