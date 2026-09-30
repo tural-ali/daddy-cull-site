@@ -409,27 +409,28 @@
     var sources = [
       ['sd_card', 'Camera card', ['DSC_1180.NEF', 'DSC_1181.JPG']],
       ['cloud_download', 'iCloud Photos', ['IMG_5531.HEIC', 'IMG_5532.MOV']],
-      ['photo_library', 'Apple Photos', ['IMG_4410.HEIC', 'IMG_4412.MOV']],
       ['inventory_2', 'Google Takeout', ['PXL_0021.jpg', 'PXL_0022.mp4']]
     ];
+    var files = sources.length * 2;
     root.innerHTML = '<div class="src-list">' + sources.map(function (s) {
       return '<span class="src">' + icon(s[0]) + s[1] + '</span>';
     }).join('') + '</div><div class="inbox">' + icon('folder') + '<b>Import</b><span><b data-n>0</b> files</span></div>';
-    var rows = $$(root, '.src'), box = $(root, '.inbox'), n = $(root, '[data-n]');
+    var rows = $$(root, '.src'), box = $(root, '.inbox'), folder = $(box, '.i'), n = $(root, '[data-n]');
     return {
-      still: function () { n.textContent = '8'; },
+      still: function () { n.textContent = String(files); },
       loop: async function () {
         n.textContent = '0';
-        for (var i = 0; i < 8; i++) {
-          var s = i % 4, row = rows[s];
+        for (var i = 0; i < files; i++) {
+          var s = i % sources.length, row = rows[s];
           row.classList.add('on');
-          var chip = el('span', 'fchip', '<i style="background-image:' + photo(i + 20).replace(/"/g, "'") + '"></i>' + sources[s][2][i >> 2]);
+          var chip = el('span', 'fchip', '<i style="background-image:' + photo(i + 20).replace(/"/g, "'") + '"></i>' + sources[s][2][Math.floor(i / sources.length)]);
           root.appendChild(chip);
-          var a = relRect(row, root), b = relRect(box, root);
-          chip.style.left = (a.x + a.w - 20) + 'px'; chip.style.top = (a.y + 2) + 'px';
-          var dx = b.x + 16 - (a.x + a.w - 20), dy = b.y + b.h / 2 - 12 - a.y;
+          var a = relRect(row, root), f = relRect(folder, root), left = a.x + a.w - 20, top = a.y + 2;
+          chip.style.left = left + 'px'; chip.style.top = top + 'px';
+          // The chip drops into the folder icon, so it never crosses the label.
+          var dx = f.x + f.w / 2 - (left + chip.offsetWidth / 2), dy = f.y + f.h / 2 - (top + chip.offsetHeight / 2);
           (function (c, r) {
-            animate(c, [{transform: 'translate(0,0)', opacity: 0}, {transform: 'translate(' + dx * 0.2 + 'px,' + dy * 0.2 + 'px)', opacity: 1, offset: 0.2}, {transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.6)', opacity: 0}], {duration: 1100, easing: 'ease-in-out'}).then(function () {
+            animate(c, [{transform: 'translate(0,0)', opacity: 0}, {transform: 'translate(' + dx * 0.2 + 'px,' + dy * 0.2 + 'px)', opacity: 1, offset: 0.2}, {transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.3)', opacity: 0}], {duration: 1100, easing: 'ease-in-out'}).then(function () {
               c.remove(); r.classList.remove('on');
               n.textContent = +n.textContent + 1;
               animate(box, [{transform: 'scale(1)'}, {transform: 'scale(1.04)'}, {transform: 'scale(1)'}], {duration: 260});
