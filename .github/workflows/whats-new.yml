@@ -1,0 +1,42 @@
+name: What's new
+
+# Keeps What's new on the page in step with the app's own history: every
+# hour, and whenever it is asked for, it reads the app's main and commits
+# index.html if a new version has come out since.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [tools/whats_new.py]
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: whats-new
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the app's history
+        run: git clone --quiet --filter=blob:none --no-checkout https://github.com/tural-ali/daddy-cull.git "$RUNNER_TEMP/app"
+      - name: Rewrite What's new
+        run: python3 tools/whats_new.py "$RUNNER_TEMP/app"
+      - name: Commit it if it changed
+        run: |
+          git diff --quiet -- index.html && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "chore: What's new lists the app's latest versions" -- index.html
+          git push --quiet
+          # A push made with this workflow's own token may not start a Pages
+          # build by itself, so ask for one.
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" --silent
+        env:
+          GH_TOKEN: ${{ github.token }}

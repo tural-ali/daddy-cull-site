@@ -883,8 +883,10 @@ h1 .w { display: inline-block; animation: word-in .95s var(--spring) both; anima
 .timeline > li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 20px; padding: 20px 0; border-top: 1px solid var(--line); }
 .timeline > li:last-child { border-bottom: 1px solid var(--line); }
 .ver { justify-self: start; align-self: start; margin-top: 2px; padding: 2px 10px; border-radius: 999px; font-size: 14px; font-weight: 650; color: var(--accent); background: var(--accent-soft); font-variant-numeric: tabular-nums; }
-.timeline h3 { font-size: 18px; }
-.timeline p { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; }
+.timeline h3 { font-size: 18px; text-wrap: balance; }
+.timeline h3 a { color: inherit; text-decoration: none; }
+.timeline h3 a:hover { color: var(--accent); text-decoration: underline; }
+.timeline p { margin: 4px 0 0; color: var(--muted); font-size: 15.5px; max-width: 68ch; }
 
 /* Install */
 
