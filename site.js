@@ -266,6 +266,7 @@
         var kind = r < 0.07 ? '' : r < 0.6 ? 'few' : r < 0.86 ? 'some' : 'many';
         var cell = el('span', 'c' + (kind ? ' ' + kind : ''));
         cell.title = day + ' ' + name;
+        cell.textContent = day;
         if (kind) filed++;
         if (month === todayMonth && day === todayDay) {
           cell.className = 'c now';
@@ -288,31 +289,156 @@
       bar.style.width = (done / filed * 100).toFixed(2) + '%';
     }
     if (reduce || !before.length || !('IntersectionObserver' in window)) { show(before.length); return; }
-    // The year fills in while the calendar is on screen, and again each time
-    // it comes back, so a reader who looks at it after the headline still
-    // sees it happen. Off screen or in a hidden tab its clock stands still.
+    // The year fills in once its dates have settled into place, and again
+    // each time they settle after the reader scrolls back up, so a reader who
+    // looks at it after the headline still sees it happen. Off screen or in a
+    // hidden tab its clock stands still. Reaching today, today's square
+    // bounces and the count and bar cheer.
     var FILL = 5200, HOLD = 3400, REST = 700, cycle = FILL + HOLD + REST;
-    var clock = 0, last = null, visible = false, shown = 0, ticking = false;
+    var clock = 0, last = null, settled = false, visible = false, shown = 0, ticking = false, cheered = false;
+    var todayCell = $(grid, '.c.now');
     function paint(target) {
       for (; shown < target; shown++) before[shown].classList.add('done');
       for (; shown > target; shown--) before[shown - 1].classList.remove('done');
       count.textContent = shown;
       bar.style.width = (shown / filed * 100).toFixed(2) + '%';
+      if (shown === before.length && !cheered) { cheered = true; cheer(); }
+      if (shown === 0) cheered = false;
+    }
+    function cheer() {
+      [todayCell, count, bar.parentNode].forEach(function (node) {
+        if (!node) return;
+        node.classList.remove('cheer');
+        void node.offsetWidth;
+        node.classList.add('cheer');
+      });
     }
     function frame(time) {
-      if (!visible) { ticking = false; last = null; return; }
+      if (!settled || !visible) { ticking = false; last = null; return; }
       if (last !== null && !document.hidden) clock = (clock + time - last) % cycle;
       last = time;
       var progress = Math.min(1, clock / FILL);
       paint(clock < FILL + HOLD ? Math.round((1 - Math.pow(1 - progress, 2)) * before.length) : 0);
       requestAnimationFrame(frame);
     }
+    function run() {
+      if (settled && visible && !ticking) { ticking = true; requestAnimationFrame(frame); }
+    }
     new IntersectionObserver(function (entries) {
-      var now = entries[entries.length - 1].isIntersecting;
-      if (now && !visible) { clock = 0; paint(0); }
-      visible = now;
-      if (visible && !ticking) { ticking = true; requestAnimationFrame(frame); }
+      var seen = entries[entries.length - 1].isIntersecting;
+      if (seen && !visible) { clock = 0; paint(0); }
+      visible = seen;
+      run();
     }, {threshold: 0.4}).observe(grid);
+    flock(function (on) {
+      if (on === settled) return;
+      settled = on;
+      clock = 0; paint(0);
+      run();
+    });
+
+    // Dates scattered at different depths in the space above the calendar,
+    // blurred as a lens blurs what is nearer or further than its focus and
+    // drifting at the speed of their depth, settle into their own squares as
+    // the reader scrolls down, while the other squares rise into place
+    // around them. Scrolling back up scatters them again. onSettled hears
+    // when every date is in place, and when they leave it.
+    function flock(onSettled) {
+      var progressBox = grid.closest('.progress'), figure = grid.closest('.year'), head = $(progressBox, '.head');
+      var layer = el('div', 'flock');
+      layer.setAttribute('aria-hidden', 'true');
+      progressBox.insertBefore(layer, progressBox.firstChild);
+      var random = seeded(20261001);
+      var cells = $$(grid, '.c');
+      cells.forEach(function (cell) { cell.style.setProperty('--d', random().toFixed(3)); });
+      var narrowView = window.matchMedia('(max-width: 640px)').matches;
+      var pool = cells.filter(function (cell) { return /\b(few|some|many)\b/.test(cell.className); });
+      for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(random() * (i + 1)), t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+      var BASE = 60;
+      var flies = pool.slice(0, narrowView ? 22 : 44).map(function (cell) {
+        var parts = cell.title.split(' ');
+        var node = el('span', 'stray ' + cell.className.replace(/\bc\b/, '').trim(), '<b>' + parts[0] + '</b><i>' + parts[1] + '</i>');
+        layer.appendChild(node);
+        cell.classList.add('held');
+        var z = random();
+        node.style.zIndex = Math.round(z * 10);
+        return {cell: cell, node: node, z: z, from: random() * 0.28 + 0.16, spin: (random() - 0.5) * 40, phase: random() * 6.28, speed: 0.6 + random() * 0.8, seed: [random(), random()], landed: false};
+      });
+      var box = {};
+      function measure() {
+        var width = progressBox.offsetWidth;
+        var gap = parseFloat(getComputedStyle(progressBox).marginTop) || 0;
+        box.top = -gap * 0.92;
+        box.headTop = head.offsetTop;
+        box.headBottom = head.offsetTop + head.offsetHeight;
+        box.figureTop = figure.offsetTop;
+        box.figureHeight = figure.offsetHeight;
+        var headWidth = Math.min(head.offsetWidth, 820);
+        flies.forEach(function (fly) {
+          fly.size = fly.cell.offsetWidth;
+          fly.x = figure.offsetLeft + fly.cell.offsetLeft + fly.size / 2;
+          fly.y = figure.offsetTop + fly.cell.offsetTop + fly.size / 2;
+          fly.start = (narrowView ? 30 : 38) + fly.z * (narrowView ? 56 : 92);
+          // Spread across the width and the space down to the heading, kept
+          // clear of the heading itself so it stays easy to read.
+          var x, y, tries = 0, a = fly.seed[0], b = fly.seed[1];
+          do {
+            x = (-0.06 + 1.12 * a) * width;
+            y = box.top + (box.headBottom + 40 - box.top) * b;
+            a = (a + 0.618) % 1; b = (b + 0.382) % 1;
+          } while (++tries < 12 && y > box.headTop - 30 && y < box.headBottom + 20 && Math.abs(x - width / 2) < headWidth * 0.46);
+          fly.sx = x; fly.sy = y;
+        });
+      }
+      measure();
+      if ('ResizeObserver' in window) new ResizeObserver(function () { measure(); }).observe(progressBox);
+      function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+      function clamp(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+      var near = false, looping = false, wasSettled = null;
+      function draw(time) {
+        if (!near) { looping = false; return; }
+        var vh = window.innerHeight, top = progressBox.getBoundingClientRect().top;
+        // From the moment the space above the calendar comes up from the
+        // bottom of the window until the calendar sits where it can be seen
+        // whole.
+        var startTop = vh - box.top;
+        var endTop = Math.max(64, (vh - box.figureHeight) / 2) - box.figureTop;
+        var p = clamp((startTop - top) / Math.max(1, startTop - endTop));
+        var seconds = time / 1000;
+        flies.forEach(function (fly) {
+          var e = ease(clamp((p - fly.from) / 0.5));
+          var landed = e >= 1;
+          if (landed !== fly.landed) {
+            fly.landed = landed;
+            fly.node.style.visibility = landed ? 'hidden' : '';
+            fly.cell.classList.toggle('held', !landed);
+          }
+          if (landed) return;
+          var rest = 1 - e, focus = Math.abs(fly.z - 0.42);
+          var drift = rest * (1 - p) * (fly.z - 0.5) * 300;
+          var bob = rest * Math.sin(seconds * fly.speed + fly.phase) * 7;
+          var size = fly.start + (fly.size - fly.start) * e;
+          var cx = fly.sx + (fly.x - fly.sx) * e, cy = fly.sy + drift + bob + (fly.y - fly.sy - drift - bob) * e;
+          var scale = size / BASE;
+          var style = fly.node.style;
+          style.transform = 'translate3d(' + (cx - BASE / 2).toFixed(1) + 'px,' + (cy - BASE / 2).toFixed(1) + 'px,0) rotate(' + (fly.spin * rest).toFixed(2) + 'deg) scale(' + scale.toFixed(4) + ')';
+          style.filter = 'blur(' + (rest * focus * 16 / Math.max(scale, 0.4)).toFixed(2) + 'px)';
+          style.opacity = (1 - rest * focus * 1.3).toFixed(3);
+          style.borderRadius = (14 + (4 / scale - 14) * e).toFixed(2) + 'px';
+          style.setProperty('--t', clamp((0.85 - e) / 0.3).toFixed(3));
+        });
+        var a = clamp((p - 0.1) / 0.8);
+        grid.style.setProperty('--a', a.toFixed(4));
+        grid.classList.toggle('assembling', a < 1);
+        var done = p >= 1;
+        if (done !== wasSettled) { wasSettled = done; onSettled(done); }
+        requestAnimationFrame(draw);
+      }
+      new IntersectionObserver(function (entries) {
+        near = entries[entries.length - 1].isIntersecting;
+        if (near && !looping) { looping = true; requestAnimationFrame(draw); }
+      }, {rootMargin: '50% 0px 50% 0px'}).observe(progressBox);
+    }
   })();
 
   /* Today: a day being cleaned up, one key at a time. */

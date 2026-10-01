@@ -37,6 +37,7 @@
   --code-s: #f7c66a;
   --shadow: 0 40px 100px -50px rgb(0 0 0 / .8);
   --ease: cubic-bezier(.2, .7, .2, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
   --font: "Google Sans Flex", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -181,20 +182,25 @@ h1 {
 }
 h1 .two { display: block; color: var(--accent); }
 .hero-copy > * { animation: rise-in 1.1s var(--ease) both; }
-.hero-copy > :nth-child(2) { animation-delay: .12s; }
-.hero-copy > :nth-child(3) { animation-delay: .24s; }
-.hero-copy > :nth-child(4) { animation-delay: .32s; }
-.hero-copy > :nth-child(5) { animation-delay: .4s; }
+.hero-copy > :nth-child(2) { animation-delay: .38s; }
+.hero-copy > :nth-child(3) { animation-delay: .48s; }
+.hero-copy > :nth-child(4) { animation-delay: .56s; }
+.hero-copy > :nth-child(5) { animation-delay: .64s; }
 @keyframes rise-in { from { opacity: 0; transform: translateY(28px); } }
+/* The headline arrives a word at a time, each with a little bounce. */
+.hero-copy > h1 { animation: none; }
+h1 .w { display: inline-block; animation: word-in .95s var(--spring) both; animation-delay: calc(60ms + var(--k) * 70ms); }
+@keyframes word-in { from { opacity: 0; transform: translateY(.42em) rotate(5deg) scale(.88); } }
 .lede { font-size: 21px; line-height: 1.5; color: var(--muted); margin: 28px auto 0; max-width: 36em; text-wrap: pretty; }
 .define { font-size: 16px; color: var(--muted); margin: 18px auto 0; font-style: italic; }
 .ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 36px 0 0; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px;
   font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 999px;
-  color: var(--accent-ink); background: var(--accent); transition: filter .2s, background .2s;
+  color: var(--accent-ink); background: var(--accent); transition: filter .2s, background .2s, transform .4s var(--spring);
 }
-.btn:hover { filter: brightness(1.06); }
+.btn:hover { filter: brightness(1.06); transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(.97); transition-duration: .1s; }
 .btn.ghost { color: var(--text); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
 .btn.ghost:hover { filter: none; background: var(--frame); }
 .fine { font-size: 14px; color: var(--muted); margin: 18px 0 0; }
@@ -237,17 +243,77 @@ h1 .two { display: block; color: var(--accent); }
   font-variant-numeric: tabular-nums;
 }
 .grid .m { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); align-self: center; }
+/* Each square carries its day, as in the app, sized to the square: 31 of
+   them share the width less the month column and the 31 gaps. */
+.grid { container-type: inline-size; }
 .grid .c {
   aspect-ratio: 1; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--line);
+  display: grid; place-items: center; font-size: calc((100cqi - 158px) / 31 * .44); font-weight: 650; line-height: 1;
+  color: var(--muted);
   transition: background-color .35s ease, transform .35s ease;
 }
 .grid .c.few, .grid .c.some, .grid .c.many, .grid .c.done { box-shadow: none; }
+.grid .c.few, .grid .c.some, .grid .c.many, .grid .c.now { color: var(--cell-ink); }
+.grid .c.done { color: var(--muted); }
 .grid .c.few { background: var(--few); }
 .grid .c.some { background: var(--some); }
 .grid .c.many { background: var(--many); }
 .grid .c.done { background: var(--done); }
 .grid .c.now { background: var(--some); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--amber); position: relative; z-index: 1; }
 .grid .gap { aspect-ratio: 1; }
+.grid .c:hover { transform: scale(1.45); position: relative; z-index: 2; transition: background-color .35s ease, transform .4s var(--spring); }
+.grid .c.done { animation: tick .5s var(--spring); }
+@keyframes tick { 40% { transform: scale(1.2); } }
+
+/* Dates scattered in depth above the calendar, which settle into their
+   squares as the reader scrolls; site.js moves them. The heading stays in
+   front of them and the calendar behind. */
+.demo { overflow-x: clip; }
+.demo .scene-today, .demo .scene-note { position: relative; z-index: 2; }
+.progress { position: relative; }
+.progress > .head { position: relative; z-index: 2; }
+.year { position: relative; z-index: 0; }
+.flock { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.stray {
+  position: absolute; left: 0; top: 0; width: 60px; height: 60px; border-radius: 14px;
+  display: grid; place-items: center; line-height: 1; text-align: center;
+  color: var(--cell-ink); background: var(--few); transform-origin: 50% 50%;
+  box-shadow: 0 14px 30px -14px rgb(0 0 0 / calc(.45 * var(--t, 1)));
+  will-change: transform, filter, opacity;
+}
+.stray.some { background: var(--some); }
+.stray.many { background: var(--many); }
+/* The day is drawn at the size its square's digit has once the stray has
+   shrunk to the square, so it lands as that digit; only the month goes. */
+.stray b { font-size: 26.4px; font-weight: 650; font-variant-numeric: tabular-nums; transform: translateY(calc(-7px * var(--t, 1))); }
+.stray i { position: absolute; left: 0; right: 0; bottom: 10px; font-style: normal; font-size: 10.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; opacity: var(--t, 1); }
+.grid .c.held { visibility: hidden; }
+.grid.assembling .c, .grid.assembling .m { transition: none; pointer-events: none; }
+.grid.assembling .c {
+  --k: clamp(0, calc((var(--a) - var(--d, 0) * .55) * 2.6), 1);
+  opacity: var(--k); transform: scale(calc(.3 + .7 * var(--k)));
+}
+.grid.assembling .m { opacity: var(--a); }
+
+/* Reaching today: its square bounces, a ring goes out from it, and the
+   count and the bar cheer. */
+.grid .c.now::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--amber); opacity: 0; pointer-events: none;
+}
+.grid .c.now.cheer { animation: cheer .9s var(--spring); }
+.grid .c.now.cheer::after { animation: ring 1.1s cubic-bezier(.2, .7, .3, 1); }
+@keyframes cheer { 0% { transform: none; } 30% { transform: scale(1.7) rotate(-8deg); } 100% { transform: none; } }
+@keyframes ring { 0% { opacity: .9; transform: none; } 100% { opacity: 0; transform: scale(3.2); } }
+.year-count b { display: inline-block; }
+.year-count b.cheer { animation: bump 1.1s var(--spring); }
+@keyframes bump { 25% { transform: translateY(-5px) scale(1.25); color: var(--accent); } 60% { color: var(--accent); } }
+.year-bar.cheer span {
+  background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / .7), transparent);
+  background-size: 30% 100%; background-repeat: no-repeat;
+  animation: sweep 1.1s ease-out;
+}
+@keyframes sweep { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 
 .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
 .chip { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: var(--cell-ink); }
@@ -900,6 +966,9 @@ h1 .two { display: block; color: var(--accent); }
 }
 
 @media (max-width: 640px) {
+  /* A phone's squares are too small for a digit, so a stray's day goes with its month. */
+  .grid .c { font-size: 0; }
+  .stray b { opacity: var(--t, 1); }
   body { font-size: 16px; }
   .wrap { padding: 0 16px; }
   section { padding: 80px 0; }
