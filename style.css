@@ -276,7 +276,7 @@ h1 .w { display: inline-block; animation: word-in .95s var(--spring) both; anima
 .year { position: relative; z-index: 0; }
 .flock { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .stray {
-  position: absolute; left: 0; top: 0; width: 60px; height: 60px; border-radius: 14px;
+  position: absolute; left: 0; top: 0; width: 72px; height: 72px; border-radius: 14px;
   display: grid; place-items: center; line-height: 1; text-align: center;
   color: var(--cell-ink); background: var(--few); transform-origin: 50% 50%;
   box-shadow: 0 14px 30px -14px rgb(0 0 0 / calc(.45 * var(--t, 1)));
@@ -285,9 +285,10 @@ h1 .w { display: inline-block; animation: word-in .95s var(--spring) both; anima
 .stray.some { background: var(--some); }
 .stray.many { background: var(--many); }
 /* The day is drawn at the size its square's digit has once the stray has
-   shrunk to the square, so it lands as that digit; only the month goes. */
-.stray b { font-size: 26.4px; font-weight: 600; color: color-mix(in srgb, var(--cell-ink) calc(45% + 55% * var(--t, 1)), transparent); font-variant-numeric: tabular-nums; transform: translateY(calc(-7px * var(--t, 1))); }
-.stray i { position: absolute; left: 0; right: 0; bottom: 10px; font-style: normal; font-size: 10.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; opacity: var(--t, 1); }
+   shrunk to the square, so it lands as that digit; in flight it is smaller,
+   with room around it and its month. */
+.stray b { font-size: 31.68px; font-weight: 600; color: color-mix(in srgb, var(--cell-ink) calc(45% + 55% * var(--t, 1)), transparent); font-variant-numeric: tabular-nums; transform: translateY(calc(-8px * var(--t, 1))) scale(calc(1 - .24 * var(--t, 1))); }
+.stray i { position: absolute; left: 0; right: 0; bottom: 15px; font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; opacity: calc(.8 * var(--t, 1)); }
 .grid .c.held { visibility: hidden; }
 .grid.assembling .c, .grid.assembling .m { transition: none; pointer-events: none; }
 .grid.assembling .c {

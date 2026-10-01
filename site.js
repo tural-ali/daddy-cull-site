@@ -354,41 +354,63 @@
       var narrowView = window.matchMedia('(max-width: 640px)').matches;
       var pool = cells.filter(function (cell) { return /\b(few|some|many)\b/.test(cell.className); });
       for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(random() * (i + 1)), t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
-      var BASE = 60;
-      var flies = pool.slice(0, narrowView ? 22 : 44).map(function (cell) {
+      var BASE = 72;
+      var flies = pool.slice(0, narrowView ? 14 : 26).map(function (cell) {
         var parts = cell.title.split(' ');
         var node = el('span', 'stray ' + cell.className.replace(/\bc\b/, '').trim(), '<b>' + parts[0] + '</b><i>' + parts[1] + '</i>');
         layer.appendChild(node);
         cell.classList.add('held');
         var z = random();
         node.style.zIndex = Math.round(z * 10);
-        return {cell: cell, node: node, z: z, from: random() * 0.28 + 0.16, spin: (random() - 0.5) * 40, phase: random() * 6.28, speed: 0.6 + random() * 0.8, seed: [random(), random()], landed: false};
+        return {cell: cell, node: node, z: z, from: random() * 0.28 + 0.16, spin: (random() - 0.5) * 30, phase: random() * 6.28, speed: 0.6 + random() * 0.8, seed: [random(), random()], landed: false};
       });
-      var box = {};
+      // The words around the flight: the key hints above, the heading and
+      // its lede, and the calendar's own title. No date starts over them,
+      // and one passing over them on its way down all but vanishes, so they
+      // read on a clear ground.
+      var words = [$(progressBox.parentNode, '.scene-note .keys'), $(head, 'h3'), $(head, '.section-lede'), $(figure, '.year-head')].filter(Boolean);
+      var box = {}, clear = [];
       function measure() {
-        var width = progressBox.offsetWidth;
+        var width = progressBox.offsetWidth, origin = progressBox.getBoundingClientRect();
         var gap = parseFloat(getComputedStyle(progressBox).marginTop) || 0;
         box.top = -gap * 0.92;
-        box.headTop = head.offsetTop;
         box.headBottom = head.offsetTop + head.offsetHeight;
         box.figureTop = figure.offsetTop;
         box.figureHeight = figure.offsetHeight;
-        var headWidth = Math.min(head.offsetWidth, 820);
+        clear = words.map(function (word) {
+          var range = document.createRange();
+          range.selectNodeContents(word);
+          var rect = range.getBoundingClientRect();
+          return {left: rect.left - origin.left, right: rect.right - origin.left, top: rect.top - origin.top, bottom: rect.bottom - origin.top};
+        });
+        var room = narrowView ? 64 : 96, placed = [];
         flies.forEach(function (fly) {
           fly.size = fly.cell.offsetWidth;
           fly.x = figure.offsetLeft + fly.cell.offsetLeft + fly.size / 2;
           fly.y = figure.offsetTop + fly.cell.offsetTop + fly.size / 2;
-          fly.start = (narrowView ? 30 : 38) + fly.z * (narrowView ? 56 : 92);
-          // Spread across the width and the space down to the heading, kept
-          // clear of the heading itself so it stays easy to read.
-          var x, y, tries = 0, a = fly.seed[0], b = fly.seed[1];
+          fly.start = (narrowView ? 30 : 36) + fly.z * (narrowView ? 30 : 48);
+          // Spread across the width and the space down to the heading, clear
+          // of the words and of the dates already placed.
+          var x, y, tries = 0, a = fly.seed[0], b = fly.seed[1], best = null, bestScore = -Infinity;
           do {
-            x = (-0.06 + 1.12 * a) * width;
-            y = box.top + (box.headBottom + 40 - box.top) * b;
+            x = (-0.04 + 1.08 * a) * width;
+            y = box.top + (box.headBottom + 30 - box.top) * b;
             a = (a + 0.618) % 1; b = (b + 0.382) % 1;
-          } while (++tries < 12 && y > box.headTop - 30 && y < box.headBottom + 20 && Math.abs(x - width / 2) < headWidth * 0.46);
-          fly.sx = x; fly.sy = y;
+            var score = Math.min(distance(x, y) - fly.start / 2 - (narrowView ? 24 : 48), placed.reduce(function (least, at) {
+              return Math.min(least, Math.hypot(at[0] - x, at[1] - y) - room);
+            }, Infinity));
+            if (score > bestScore) { bestScore = score; best = [x, y]; }
+          } while (++tries < 40 && bestScore < 0);
+          placed.push(best);
+          fly.sx = best[0]; fly.sy = best[1];
         });
+      }
+      // How far a point is from the nearest of the words, 0 inside one.
+      function distance(x, y) {
+        return clear.reduce(function (least, rect) {
+          var dx = Math.max(rect.left - x, 0, x - rect.right), dy = Math.max(rect.top - y, 0, y - rect.bottom);
+          return Math.min(least, Math.hypot(dx, dy));
+        }, Infinity);
       }
       measure();
       if ('ResizeObserver' in window) new ResizeObserver(function () { measure(); }).observe(progressBox);
@@ -415,15 +437,18 @@
           }
           if (landed) return;
           var rest = 1 - e, focus = Math.abs(fly.z - 0.42);
-          var drift = rest * (1 - p) * (fly.z - 0.5) * 300;
+          var drift = rest * (1 - p) * (fly.z - 0.5) * 160;
           var bob = rest * Math.sin(seconds * fly.speed + fly.phase) * 7;
           var size = fly.start + (fly.size - fly.start) * e;
           var cx = fly.sx + (fly.x - fly.sx) * e, cy = fly.sy + drift + bob + (fly.y - fly.sy - drift - bob) * e;
           var scale = size / BASE;
           var style = fly.node.style;
           style.transform = 'translate3d(' + (cx - BASE / 2).toFixed(1) + 'px,' + (cy - BASE / 2).toFixed(1) + 'px,0) rotate(' + (fly.spin * rest).toFixed(2) + 'deg) scale(' + scale.toFixed(4) + ')';
-          style.filter = 'blur(' + (rest * focus * 16 / Math.max(scale, 0.4)).toFixed(2) + 'px)';
-          style.opacity = (1 - rest * focus * 1.3).toFixed(3);
+          style.filter = 'blur(' + (rest * focus * 10 / Math.max(scale, 0.4)).toFixed(2) + 'px)';
+          // Over the words it fades to a trace, less so as it comes down
+          // into its square.
+          var over = 1 - clamp((distance(cx, cy) - size * 0.2) / (size * 0.6 + 56));
+          style.opacity = ((1 - rest * focus * 1.3) * (1 - over * 0.92 * clamp(rest * 3))).toFixed(3);
           style.borderRadius = (14 + (4 / scale - 14) * e).toFixed(2) + 'px';
           style.setProperty('--t', clamp((0.85 - e) / 0.3).toFixed(3));
         });
